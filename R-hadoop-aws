@@ -1,0 +1,7 @@
+aws emr create-cluster --ami-version 3.2.1 --use-default-roles --instance-groups  \
+InstanceGroupType=MASTER,InstanceCount=1,InstanceType=m3.2xlarge InstanceGroupType=CORE,InstanceCount=5,InstanceType=m3.2xlarge \
+--bootstrap-actions Path="s3://ziqi-norilsk/emR_bootstrap.sh",Name=CustomAction,Args=[--rstudio,--rexamples,--plyrmr,--rhdfs] \
+ --steps Name=HDFS_tmp_permission,Jar="s3://elasticmapreduce/libs/script-runner/script-runner.jar",Args="s3://ziqi-norilsk/hdfs_permission.sh" \
+--region us-east-1 --ec2-attributes KeyName="ziqi-test",AvailabilityZone=us-east-1a \
+--no-auto-terminate --name emR-example
+

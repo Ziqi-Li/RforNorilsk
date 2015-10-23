@@ -1,12 +1,25 @@
 library(raster)
 library(plyr)
-setwd("F:\\Raster brick for lower yenesei")
-files <- list.files()
+library(ggplot2)
+library(reshape)
+library(gstat)
+setwd("/Users/liziqi/Desktop/Raster brick for lower yenesei")
+files <- list.files(pattern = ".tif")
 
 #read all bricks
 b = brick()
+b2=brick()
 for (i in (1:length(files))){
-	b=addLayer(b, raster(files[i]))
+	r = raster(files[i])
+	rdf = as.data.frame(r,xy=T)
+	colnames(rdf)=c("x","y","t")
+	rdf = rdf[complete.cases(rdf),]
+	model <- gstat(id = "t", formula = t~1, locations = ~x+y, data=rdf, 
+            nmax=7, set=list(idp = .5))
+	z <- interpolate(r, model)
+	z <- mask(z,)
+	b2=addLayer(b2, z)
+	b=addLayer(b,r)
 }
 
 df = as.data.frame(b,xy=T)
@@ -26,19 +39,68 @@ repeat{
   }
 }
 
-k = ddply(a[,c(4,6:125)], .(class_85_87_1km), colwise(mean,na.rm=T))
+#Annual
+colnames(a)[3] = "class_00_02_1km"
+k = ddply(a[,c(3,126:135)], .(class_00_02_1km), colwise(mean,na.rm=T))
+k$class_00_02_1km[k$class_00_02_1km==1]="water"
+k$class_00_02_1km[k$class_00_02_1km==2]="soil"
+k$class_00_02_1km[k$class_00_02_1km==3]="tundra"
+k$class_00_02_1km[k$class_00_02_1km==4]="forest"
+k$class_00_02_1km[k$class_00_02_1km==5]="urban"
 k = k[complete.cases(k),]
-k = ddply(a[,c(4,126:135)], .(class_85_87_1km), colwise(mean,na.rm=T))
-k$class_85_87_1km[k$class_85_87_1km==1]="water"
-k$class_85_87_1km[k$class_85_87_1km==2]="soil"
-k$class_85_87_1km[k$class_85_87_1km==3]="tundra"
-k$class_85_87_1km[k$class_85_87_1km==4]="forest"
-k$class_85_87_1km[k$class_85_87_1km==5]="urban"
-k = k[complete.cases(k),]
-Molten <- melt(k, id.vars = "class_85_87_1km")
+cl = read.csv("norilsk_climate.csv")
+rbi <- ddply(cl, .(Year), summarise,t2m=mean(tm, na.rm = TRUE),rr=mean(RR, na.rm = TRUE))
+station = subset(subset(rbi,Year<=2011),Year>=2002)
+m = t(station)
+colnames(m) = station$Year
+s = m[2,]
+s=s+273.15
+s = as.data.frame(t(s))
+s$class_00_02_1km = "t2m"
+k = rbind(s,k)
+k = k[c(11,1:10)]
+
+Molten <- melt(k, id.vars = "class_00_02_1km")
 colnames(Molten) <- c("class", "year","temperature")
 pl = ggplot(Molten, aes(x = year, y = temperature, group = class,color=class)) + geom_line(size = 0.7)+geom_point()
-pl+geom_smooth(data=Molten,aes(x = year, y = temperature, group = class,color=class),method=lm,se=FALSE)+scale_color_manual(values=c("darkgreen", "black", "green", "red", "blue"))
+pl+geom_smooth(data=Molten,aes(x = year, y = temperature, group = class,color=class),method=lm,se=FALSE)+scale_color_manual(values=c("darkgreen", "grey","black", "green", "red", "blue"))
+
+#by Month
+k = ddply(a[,c(3,6:125)], .(class_00_02_1km), colwise(mean,na.rm=T))
+k = k[complete.cases(k),]
+k$class_00_02_1km[k$class_00_02_1km==1]="water"
+k$class_00_02_1km[k$class_00_02_1km==2]="soil"
+k$class_00_02_1km[k$class_00_02_1km==3]="tundra"
+k$class_00_02_1km[k$class_00_02_1km==4]="forest"
+k$class_00_02_1km[k$class_00_02_1km==5]="urban"
+
+cl = read.csv("norilsk_climate.csv")
+rbi <- ddply(cl, .(Year,Month), summarise,t2m=mean(tm, na.rm = TRUE),rr=mean(RR, na.rm = TRUE))
+station = subset(subset(rbi,Year<=2011),Year>=2002)
+m = t(station)
+s = m[3,]
+s=s+273.15
+s = as.data.frame(t(s))
+s$class_00_02_1km = "t2m"
+s = s[c(121,1:120)]
+colnames(s) = colnames(k)
+k = rbind(s,k)
+Molten <- melt(k, id.vars = "class_00_02_1km")
+colnames(Molten) <- c("class", "year","temperature")
+pl = ggplot(Molten, aes(x = year, y = temperature, group = class,color=class)) + geom_line(size = 0.7)+geom_point()
+pl+geom_smooth(data=Molten,aes(x = year, y = temperature, group = class,color=class),method=lm,se=FALSE)+scale_color_manual(values=c("darkgreen", "grey","black", "green", "red", "blue"))
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
