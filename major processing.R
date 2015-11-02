@@ -3,7 +3,7 @@ library(plyr)
 library(ggplot2)
 library(reshape)
 library(gstat)
-setwd("/Users/liziqi/Desktop/Raster brick for lower yenesei")
+setwd("C:\\Users\\Ziqi\\Desktop\\Raster brick for lower yenesei")
 files <- list.files(pattern = ".tif")
 
 #read all bricks
@@ -106,19 +106,16 @@ merra_t2m_0211 = merra_t2m[,277:396]
 modis_0211 = k[,6:125]
 
 #test with 29
-a = subset(df,merra_grid_no==30)
-
-
-
+a = subset(df,class_00_02_1km==1&merra_grid_no==29)
 p = cbind(a$x,a$y)
 for (j in (0:11)){
 	mts = a[,seq((127+j), (235+j), by=12)]
 	mt2m = a[,seq((247+j), (355+j), by=12)]
 	modis = a[,seq((7+j), (115+j), by=12)]
-	
-	res = summary(lm(t(modis[1,])~t(mt2m[1,])))$r.squared
-	for (i in (2:nrow(mt2m))){
-		if (!all(is.na(modis[i,])) & length(modis[i,])>=6){
+	res=c(NA)
+
+	for (i in (1:nrow(mt2m))){
+		if (!all(is.na(modis[i,])) & !all(is.na(mt2m[i,]))){
 			temp = summary(lm(t(modis[i,])~t(mt2m[i,]),na.action=na.exclude))$r.squared
 			res = rbind(res,temp)
 		}
@@ -126,8 +123,32 @@ for (j in (0:11)){
 			res = rbind(res,c(NA))
 		}
 	}
-	p = cbind(p,res)
+	p = cbind(p,res[2:dim(res)[1],])
+
 }
+a2 = subset(df,class_00_02_1km==2&merra_grid_no==29)
+p2 = cbind(a$x,a$y)
+for (j in (0:11)){
+	mts = a2[,seq((127+j), (235+j), by=12)]
+	mt2m = a2[,seq((247+j), (355+j), by=12)]
+	modis = a2[,seq((7+j), (115+j), by=12)]
+	res=c(NA)
+
+	for (i in (1:nrow(mt2m))){
+		if (!all(is.na(modis[i,])) & !all(is.na(mt2m[i,]))){
+			temp = summary(lm(t(modis[i,])~t(mt2m[i,]),na.action=na.exclude))$r.squared
+			res = rbind(res,temp)
+		}
+		else{
+			res = rbind(res,c(NA))
+		}
+	}
+	p2 = cbind(p2,res[2:dim(res)[1],])
+
+}
+
+
+
 
 
 
